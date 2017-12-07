@@ -24,6 +24,7 @@ import biz.paluch.logging.gelf.LogMessageField;
 import biz.paluch.logging.gelf.MdcGelfMessageAssembler;
 import biz.paluch.logging.gelf.intern.ConfigurationSupport;
 import biz.paluch.logging.gelf.intern.GelfMessage;
+import biz.paluch.logging.gelf.intern.sender.GelfTCPSender;
 import biz.paluch.logging.gelf.jboss7.JBoss7JulLogEvent;
 
 /**
@@ -88,9 +89,11 @@ import biz.paluch.logging.gelf.jboss7.JBoss7JulLogEvent;
 public class WildFlyJsonFormatter extends ExtFormatter {
 
     public static final String MULTI_VALUE_DELIMITTER = ",";
+    
     private MdcGelfMessageAssembler gelfMessageAssembler = new MdcGelfMessageAssembler();
     private String lineBreak = "\n";
     private boolean wasSetFieldsCalled = false;
+    private String fieldNameMapping;
 
     public static final Set<LogMessageField.NamedLogField> SUPPORTED_FIELDS;
 
@@ -114,7 +117,6 @@ public class WildFlyJsonFormatter extends ExtFormatter {
      * Create a new instance of the {@link WildFlyJsonFormatter}.
      */
     public WildFlyJsonFormatter() {
-
     }
 
     @Override
@@ -128,7 +130,6 @@ public class WildFlyJsonFormatter extends ExtFormatter {
     }
 
     public void setFields(String fieldSpec) {
-
         String[] properties = fieldSpec.split(MULTI_VALUE_DELIMITTER);
         List<LogMessageField.NamedLogField> fields = new ArrayList<LogMessageField.NamedLogField>();
         for (String field : properties) {
@@ -152,9 +153,16 @@ public class WildFlyJsonFormatter extends ExtFormatter {
     }
 
     private void addFields(Collection<LogMessageField.NamedLogField> fields) {
-        gelfMessageAssembler.addFields(LogMessageField.getDefaultMapping(fields
-                .toArray(new LogMessageField.NamedLogField[fields.size()])));
+    	if (fieldNameMapping != null && !fieldNameMapping.isEmpty()) {
+            gelfMessageAssembler.addFields(LogMessageField.getDefaultMapping(fieldNameMapping, fields.toArray(new LogMessageField.NamedLogField[fields.size()])));
+    	} else {
+            gelfMessageAssembler.addFields(LogMessageField.getDefaultMapping(fields.toArray(new LogMessageField.NamedLogField[fields.size()])));
+    	}
 
+    	if (LogMessageField.VERBOSE_LOGGING) {
+    		System.out.println("After adding default fields: " + gelfMessageAssembler.getFields());
+    	}
+    	
         wasSetFieldsCalled = true;
     }
 
@@ -245,4 +253,20 @@ public class WildFlyJsonFormatter extends ExtFormatter {
     public void setLineBreak(String lineBreak) {
         this.lineBreak = lineBreak;
     }
+    
+    public boolean isIncludeLogMessageParameters() {
+        return gelfMessageAssembler.isIncludeLogMessageParameters();
+    }
+
+    public void setIncludeLogMessageParameters(boolean includeLogMessageParameters) {
+    	gelfMessageAssembler.setIncludeLogMessageParameters(includeLogMessageParameters);
+    }
+    
+    public String getFieldNameMapping() {
+		return fieldNameMapping;
+	}
+    
+    public void setFieldNameMapping(String fieldNameMapping) {
+		this.fieldNameMapping = fieldNameMapping;
+	}
 }

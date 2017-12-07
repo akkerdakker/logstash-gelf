@@ -164,13 +164,11 @@ public class GelfMessageBuilder {
      * @return GelfMessage
      */
     public GelfMessage build() {
-
         GelfMessage gelfMessage = new GelfMessage(shortMessage, fullMessage, javaTimestamp, level);
         gelfMessage.addFields(additionalFields);
         gelfMessage.setMaximumMessageSize(maximumMessageSize);
         gelfMessage.setVersion(version);
         gelfMessage.setHost(host);
-        gelfMessage.setJavaTimestamp(javaTimestamp);
         gelfMessage.setFacility(facility);
         gelfMessage.setAdditionalFieldTypes(additionalFieldTypes);
 

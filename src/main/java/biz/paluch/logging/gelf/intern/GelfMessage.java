@@ -24,10 +24,17 @@ import biz.paluch.logging.gelf.intern.ValueDiscovery.Result;
  * @see <a href="http://docs.graylog.org/en/2.0/pages/gelf.html">http://docs.graylog.org/en/2.0/pages/gelf.html</a>
  */
 public class GelfMessage {
+	
+	public static boolean USE_CUSTOM_FIELD_NAMING = true;
+	
+	private static boolean INCLUDE_SHORT_MESSAGE = false;
+	private static boolean INCLUDE_TIMESTAMP = false;
+	private static boolean INCLUDE_LEVEL = false;
+	private static boolean INCLUDE_FACILITY = false;
 
     public static final String FIELD_HOST = "host";
     public static final String FIELD_SHORT_MESSAGE = "short_message";
-    public static final String FIELD_FULL_MESSAGE = "full_message";
+    public static final String FIELD_FULL_MESSAGE = USE_CUSTOM_FIELD_NAMING ? "message" : "full_message";
     public static final String FIELD_TIMESTAMP = "timestamp";
     public static final String FIELD_LEVEL = "level";
     public static final String FIELD_FACILITY = "facility";
@@ -97,7 +104,6 @@ public class GelfMessage {
     }
 
     public GelfMessage(String shortMessage, String fullMessage, long timestamp, String level) {
-
         this.shortMessage = shortMessage;
         this.fullMessage = fullMessage;
         this.javaTimestamp = timestamp;
@@ -125,7 +131,6 @@ public class GelfMessage {
     }
 
     private byte[] toJsonByteArray(String additionalFieldPrefix) {
-
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         toJson(OutputAccessor.from(buffer), additionalFieldPrefix);
 
@@ -144,18 +149,17 @@ public class GelfMessage {
     }
 
     protected void toJson(OutputAccessor out, String additionalFieldPrefix) {
-
         JsonWriter.writeObjectStart(out);
 
         boolean hasFields = writeIfNotEmpty(out, false, FIELD_HOST, getHost());
 
-        if (!isEmpty(shortMessage)) {
+        if (INCLUDE_SHORT_MESSAGE && !isEmpty(shortMessage)) {
             hasFields = writeIfNotEmpty(out, hasFields, FIELD_SHORT_MESSAGE, getShortMessage());
         }
 
         hasFields = writeIfNotEmpty(out, hasFields, FIELD_FULL_MESSAGE, getFullMessage());
 
-        if (getJavaTimestamp() != 0) {
+        if (INCLUDE_TIMESTAMP && getJavaTimestamp() != 0) {
             if (GELF_VERSION_1_1.equals(version)) {
                 hasFields = writeIfNotEmpty(out, hasFields, FIELD_TIMESTAMP, getTimestampAsBigDecimal().doubleValue());
             } else {
@@ -163,7 +167,7 @@ public class GelfMessage {
             }
         }
 
-        if (!isEmpty(getLevel())) {
+        if (INCLUDE_LEVEL && !isEmpty(getLevel())) {
             if (GELF_VERSION_1_1.equals(version)) {
                 int level;
                 try {
@@ -178,7 +182,7 @@ public class GelfMessage {
             }
         }
 
-        if (!isEmpty(getFacility())) {
+        if (INCLUDE_FACILITY && !isEmpty(getFacility())) {
             hasFields = writeIfNotEmpty(out, hasFields, FIELD_FACILITY, getFacility());
         }
 

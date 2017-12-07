@@ -4,6 +4,7 @@ import static biz.paluch.logging.RuntimeContainerProperties.getProperty;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -20,9 +21,9 @@ import biz.paluch.logging.gelf.intern.Closer;
 public class LogMessageField implements MessageField {
 
     public static final String VERBOSE_LOGGING_PROPERTY = "logstash-gelf.LogMessageField.verbose";
+    public static final boolean VERBOSE_LOGGING = Boolean.parseBoolean(getProperty(VERBOSE_LOGGING_PROPERTY, "false"));
 
     private static final String DEFAULT_MAPPING = "default-logstash-fields.properties";
-    private static final boolean VERBOSE_LOGGING = Boolean.parseBoolean(getProperty(VERBOSE_LOGGING_PROPERTY, "false"));
 
     /**
      * Named references to common log event fields.
@@ -70,12 +71,42 @@ public class LogMessageField implements MessageField {
         return name;
     }
 
+    public static List<LogMessageField> getDefaultMapping(String fieldNameMapping, NamedLogField... supportedFields) {
+        verboseLog("Configuring from field name mapping: " + fieldNameMapping);
+
+        List<LogMessageField> result = new ArrayList<LogMessageField>();
+        List<NamedLogField> supportedLogFields = Arrays.asList(supportedFields);
+
+        Properties p = new Properties();
+    	try {
+			p.load(new StringReader(fieldNameMapping.replaceAll(",", "\n")));
+
+			if (!p.isEmpty()) {
+                loadFields(p, result, supportedLogFields);
+            }
+		} catch (IOException e) {
+            verboseLog("Could not parse \"" + fieldNameMapping + "\" mapping string, using defaults: " + e.getMessage());
+		}
+    	
+        if (result.isEmpty()) {
+            verboseLog("Default mapping is empty. Using " + NamedLogField.class.getName() + " fields");
+            for (NamedLogField namedLogField : NamedLogField.values()) {
+                if (supportedLogFields.contains(namedLogField)) {
+                    result.add(new LogMessageField(namedLogField.fieldName, namedLogField));
+                }
+            }
+        }
+
+        verboseLog("Default field mapping: " + result);
+
+        return result;
+    }
+
     public static List<LogMessageField> getDefaultMapping(NamedLogField... supportedFields) {
         return getDefaultMapping(true, supportedFields);
     }
 
     public static List<LogMessageField> getDefaultMapping(boolean readFromDefaultsFile, NamedLogField... supportedFields) {
-
         List<LogMessageField> result = new ArrayList<LogMessageField>();
         List<NamedLogField> supportedLogFields = Arrays.asList(supportedFields);
 
@@ -103,7 +134,6 @@ public class LogMessageField implements MessageField {
         }
 
         if (result.isEmpty()) {
-
             verboseLog("Default mapping is empty. Using " + NamedLogField.class.getName() + " fields");
             for (NamedLogField namedLogField : NamedLogField.values()) {
                 if (supportedLogFields.contains(namedLogField)) {
@@ -125,7 +155,6 @@ public class LogMessageField implements MessageField {
 
     private static void loadFields(Properties p, List<LogMessageField> result, List<NamedLogField> supportedLogFields) {
         for (Map.Entry<Object, Object> entry : p.entrySet()) {
-
             String targetName = entry.getKey().toString();
             String sourceFieldName = entry.getValue().toString();
 

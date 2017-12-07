@@ -38,7 +38,7 @@ public class GelfMessageAssembler implements HostAndPortProvider {
     private static final int MAX_MESSAGE_SIZE = Integer.MAX_VALUE;
 
     public static final String FIELD_MESSAGE_PARAM = "MessageParam";
-    public static final String FIELD_STACK_TRACE = "StackTrace";
+    public static final String FIELD_STACK_TRACE = GelfMessage.USE_CUSTOM_FIELD_NAMING ? "exception" : "StackTrace";
 
     private String host;
     private String version = GelfMessage.GELF_VERSION;
@@ -140,7 +140,9 @@ public class GelfMessageAssembler implements HostAndPortProvider {
             shortMessage = message.substring(0, MAX_SHORT_MESSAGE_LENGTH - 1);
         }
 
-        builder.withShortMessage(shortMessage).withFullMessage(message).withJavaTimestamp(logEvent.getLogTimestamp());
+        builder.withShortMessage(shortMessage);
+        builder.withFullMessage(message);
+        builder.withJavaTimestamp(logEvent.getLogTimestamp());
         builder.withLevel(logEvent.getSyslogLevel());
         builder.withVersion(getVersion());
         builder.withAdditionalFieldTypes(additionalFieldTypes);
@@ -258,6 +260,10 @@ public class GelfMessageAssembler implements HostAndPortProvider {
         additionalFieldTypes.put(field, type);
     }
 
+    public List<MessageField> getFields() {
+		return fields;
+	}
+    
     public void addField(MessageField field) {
         if (!fields.contains(field)) {
             this.fields.add(field);
