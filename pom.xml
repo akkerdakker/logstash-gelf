@@ -183,7 +183,7 @@
                 <artifactId>maven-release-plugin</artifactId>
                 <version>${maven-release-plugin.version}</version>
                 <configuration>
-                    <releaseProfiles>sonatype-oss-release</releaseProfiles>
+                    <releaseProfiles>ivan-nexus</releaseProfiles>
                     <goals>deploy</goals>
                 </configuration>
             </plugin>
